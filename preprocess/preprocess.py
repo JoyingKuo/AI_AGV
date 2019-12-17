@@ -6,123 +6,129 @@ import numpy as np
 import json
 import sys
 import pickle
-# from moviepy.editor import *
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# +
-# initialize
-path='../../data/train_data/'
-csv_path='../../data/csv/'
-csv_file_name = '../../data/csv/straight.csv'
 
-path_list=os.listdir(path)
-path_list.sort()
-# -
+# 路徑初始化
+train_data_path='../../data/train_data/' # 訓練資料路徑
+csv_save_path='../../data/csv/' # 訓練資料列表的存放路徑
+csv_file_name = 'train_list.csv'# 訓練資料列表的名稱
+img_info_list = [] # 存訓練資料列表
 
-# graphic
-time_index = 1
-time_series = []
-json_dic = []
+# 參數初始化
+black_scene_data_num = 200 #會產生200筆黑畫面(black.png)的資料至訓練資料列表
+black_scene_img_path = train_data_path + 'black.png' # 黑畫面的圖片路徑
 
-
-# 檢查目錄是否存在 
-if not os.path.isdir(csv_path):
-    os.system('mkdir ' + csv_path)
-
-def define_dir(str):
-    if str == 'p':
+# 處理方向資料到可訓練的型態, p(正轉) => 1, n(反轉) => 0
+def change_dir_str_to_int(direction):
+    if direction == 'p':
         return 1
     else:
         return 0
 
-# for each dir in dir list
-for dirname in path_list:
-    print(dirname)
-    file_path = os.path.join(path, dirname)
+# 處理黑畫面資料
+def process_black_scene_data():
+    for i in range(black_scene_data_num):
+        single_img_info = {}
+        # 強制 assign 黑畫面的輪子資訊為-左輪方向(1),左輪速(0),右輪方向(0),右輪速(0) 
+        single_img_info['left_wheel_dir'] = 1
+        single_img_info['left_wheel_speed'] = 0
+        single_img_info['right_wheel_dir'] = 0
+        single_img_info['right_wheel_speed'] = 0
+        single_img_info['filename'] = black_scene_img_path
     
-    if(os.path.isdir(file_path)):
-        dirname=os.listdir(path + '/' + dirname)
-        dirname.sort()
-        
-        # handle 降速
-        down_speed_flag = 0
-        
-        # for each file in the test dir
-        for filename in dirname:
-            if(filename == 'black.png' ):
-                continue
-            one_info = {}
-            time_series.append(time_index)
-            time_index = time_index + 1
+        img_info_list.append(single_img_info)
+    return
 
-            x = filename.split("-", 9)
-            left_wheel = x[7]
-            right_wheel = x[8].split(".", 1)[0]
-            image = cv2.imread(os.path.join(file_path,filename))
-            left_wheel_dir = define_dir(left_wheel[0:1])
-            left_wheel_speed = left_wheel[1:]
-            right_wheel_dir = define_dir(right_wheel[0:1])
-            right_wheel_speed = right_wheel[1:]
-            if( right_wheel_speed == '0' ):
-                continue
+# 處理一般畫面資料
+def process_normal_scene_data():
+    # 在訓練資料路徑的子資料夾列表
+    sub_dir_list=os.listdir(train_data_path) 
+    sub_dir_list.sort() 
 
-#             if( down_speed_flag == 0 and left_wheel_dir == 0 ):
-#                 length = len(json_dic) - 1
-#                 down_speed_flag = 1
-#                 for i in range(15):
-#                     json_dic[length - i]['left_wheel_speed'] = int(json_dic[length - i]['left_wheel_speed']) - 20
-#                     json_dic[length - i]['right_wheel_speed'] = int(json_dic[length - i]['right_wheel_speed']) - 20
-#             if( down_speed_flag == 1 and left_wheel_dir == 1 ):
-#                 down_speed_flag = 0
+    # 依序讀取每個訓練資料夾
+    for subdir in sub_dir_list:
+        print('Process directory : ' + subdir)
 
-            one_info['left_wheel_dir'] = left_wheel_dir
-            one_info['left_wheel_speed'] = left_wheel_speed
-            one_info['right_wheel_dir'] = right_wheel_dir
-            one_info['right_wheel_speed'] = right_wheel_speed
-            one_info['filename'] = file_path + '/' + filename
+        full_subdir_path = os.path.join(train_data_path, subdir) # 完整的subdir路徑
 
-            # put text on image
-#             cv2.putText(image, "left_wheel_dir: " + str(left_wheel_dir), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
-#             cv2.putText(image, "left_wheel_speed: " + str(left_wheel_speed), (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
-#             cv2.putText(image, "right_wheel_dir: " + str(right_wheel_dir), (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
-#             cv2.putText(image, "right_wheel_speed: " + str(right_wheel_speed), (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
+        # full_subdir_path 的資料型態必須為directory, 才可以繼續進行資料preprocess
+        if(os.path.isdir(full_subdir_path)):
 
-            json_dic.append(one_info)
+            # sorting資料夾裡的照片, 使其為正確排序
+            img_path_list = os.listdir(full_subdir_path)
+            img_path_list.sort()
+            
+            
+            # 讀取資料夾裡的每張照片
+            for img in img_path_list:
 
-for i in range(200):
-    one_info = {}
-    one_info['left_wheel_dir'] = 1
-    one_info['left_wheel_speed'] = 0
-    one_info['right_wheel_dir'] = 0
-    one_info['right_wheel_speed'] = 0
-    one_info['filename'] = path + 'black.png'
+                # 讀取照片檔名, 分析AGV的行走資訊, 左輪速/方向, 右輪速/方向
+                x = img.split("-", 9)
+                left_wheel = x[7]
+                right_wheel = x[8].split(".", 1)[0]
+                left_wheel_dir = change_dir_str_to_int(left_wheel[0:1])
+                left_wheel_speed = left_wheel[1:]
+                right_wheel_dir = change_dir_str_to_int(right_wheel[0:1])
+                right_wheel_speed = right_wheel[1:]
+
+                #將處理完的資訊存到list
+                single_img_info = {}
+                single_img_info['left_wheel_dir'] = left_wheel_dir
+                single_img_info['left_wheel_speed'] = left_wheel_speed
+                single_img_info['right_wheel_dir'] = right_wheel_dir
+                single_img_info['right_wheel_speed'] = right_wheel_speed
+                single_img_info['filename'] = full_subdir_path + '/' + img
+
+                img_info_list.append(single_img_info)
+    return
+
+# 將 list 處理成 dataframe 形式, 以存成CSV
+def process_list_data_to_dataframe():
+
+    left_wheel_dir = [] # 只有存所有image的左輪方向資訊
+    left_wheel_speed = [] # 只有存所有image的左輪速度資訊
+    right_wheel_dir = [] # 只有存所有image的右輪方向資訊
+    right_wheel_speed = [] # 只有存所有image的右輪速度資訊
+    filename = [] # 只有存所有image的檔名資訊
+
+    for data in img_info_list:
+        left_wheel_dir.append(data['left_wheel_dir'])
+        left_wheel_speed.append(data['left_wheel_speed'])
+        right_wheel_dir.append(data['right_wheel_dir'])
+        right_wheel_speed.append(data['right_wheel_speed'])
+        filename.append(data['filename'])
+
+
+    # 利用 pandas 這個套件, 可以將 list 直接轉換成 dataframe 
+    df = pd.DataFrame.from_dict([])
+    df['left_wheel_dir'] = left_wheel_dir
+    df['left_wheel_speed'] = left_wheel_speed
+    df['right_wheel_dir'] = right_wheel_dir
+    df['right_wheel_speed'] = right_wheel_speed
+    df['filename'] = filename
+
+    # 儲存為CSV檔
+    df.to_csv(csv_file_name, sep=',', encoding='utf-8')
+
+    return
+
+
+def main():
+
+    # 檢查csv_save_path這個目錄是否已存在OS中, 沒有的話就創建這個資料夾
+    # 若路徑不存在, 在寫入檔案到這個路徑的時候會造成檔案遺失
+    if not os.path.isdir(csv_save_path):
+        os.system('mkdir ' + csv_save_path)
+
+    # 將 raw data 處理成 list 形式
+    process_normal_scene_data();
+    process_black_scene_data();
     
-    json_dic.append(one_info)
-
-left_wheel_dir = []
-left_wheel_speed = []
-right_wheel_dir = []
-right_wheel_speed = []
-filename = []
-
-for data in json_dic:
-    left_wheel_dir.append(data['left_wheel_dir'])
-    left_wheel_speed.append(data['left_wheel_speed'])
-    right_wheel_dir.append(data['right_wheel_dir'])
-    right_wheel_speed.append(data['right_wheel_speed'])
-    filename.append(data['filename'])
+    # 將 list 處理成 dataframe 形式, 以存成CSV
+    process_list_data_to_dataframe();
 
 
-# array to pd data type
-df = pd.DataFrame.from_dict([])
-
-df['left_wheel_dir'] = left_wheel_dir
-df['left_wheel_speed'] = left_wheel_speed
-df['right_wheel_dir'] = right_wheel_dir
-df['right_wheel_speed'] = right_wheel_speed
-df['filename'] = filename
-
-df.to_csv(csv_file_name, sep=',', encoding='utf-8')
-
-
+if __name__ == '__main__':
+    main()
