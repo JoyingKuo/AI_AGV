@@ -33,7 +33,7 @@ image_channel = 1
 output_mode = 0 
 
 # output mode = 1 時需要設定影片參數
-test_data_path='../../data/train_data/' # 訓練資料路徑
+test_data_path='../../data/train_data/' # 測試資料路徑
 origin_clip_name = './origin.mp4' #原始照片所合成的影片名稱
 predict_clip_name = './predict.mp4' #要預測的圖片所合成的影片名稱
 FPS = 4 # frame per second
@@ -48,7 +48,7 @@ def image_preprocessing(img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
    
     # reshpae image 至 (400, 400) 
-    img = cv2.resize(img, (image_reshape_width, image_reshape_height), interpolation=cv2.INTER_CUBIC)
+    img = cv2.resize(img, (image_reshape_width, image_reshape_height),fx=0, fy=0)
     img = img.reshape(image_reshape_width, image_reshape_height, image_channel)
 
     #  轉換image 至可以被餵進 model 的資料型態
@@ -97,7 +97,7 @@ def generate_predict_clip(origin_clip_name, model):
     return
 
 def handle_direction(left, right):
-    # return left, right
+    # 當得到的方向預測值 < 0.5, 就當作是 0(要轉彎), 否則為 1(不用轉彎)
     if left < 0.5:
         return 0, 1, left, right
     return 1, 1, left, right
