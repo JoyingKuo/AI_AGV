@@ -110,7 +110,7 @@ def process_list_data_to_dataframe():
     df['filename'] = filename
 
     # 儲存為CSV檔
-    df.to_csv(csv_file_name, sep=',', encoding='utf-8')
+    df.to_csv(os.path.join(csv_save_path,csv_file_name), sep=',', encoding='utf-8')
 
     return
 
