@@ -150,7 +150,18 @@ def random_shift_image(image):
     return (shift_image, delta_left_speed)
 
 # 進行資料多樣化
-def varied_image(img, left_speed, left_dir, right_speed, right_dir):
+def vary_image(img_path, left_speed, left_dir, right_speed, right_dir):
+
+    # 將image 處理成 (400, 400, channel_size) 的array
+    if(image_channel == 1):
+        img = cv2.imread(img_path, 0)
+    elif(INPUT_SHAPE[2] == 3):
+        img = cv2.imread(img_path)   
+        
+    img = cv2.resize(img, (image_width,image_height), fx=0, fy=0)
+    img = img.reshape(image_width, image_height, image_channel)
+
+    # 將資料進行隨機平移
     shift_image, shift_speed = random_shift_image(img)
     
     # 當畫面非為黑畫面的時候, 才進行shift
@@ -180,7 +191,7 @@ def generator(samples, batch_size, mode='default'):
 
             for image, left_speed, left_dir, right_speed, right_dir in zip(batch_samples['filename'], batch_samples['left_wheel_speed'], batch_samples['left_wheel_dir'], batch_samples['right_wheel_speed'], batch_samples['right_wheel_dir']):              
                 #增加資料多樣性
-                varied_image, varied_left_speed, varied_left_dir, varied_right_speed, varied_right_dir = varied_image(image, left_speed, left_dir, right_speed, right_dir)
+                varied_image, varied_left_speed, varied_left_dir, varied_right_speed, varied_right_dir = vary_image(image, left_speed, left_dir, right_speed, right_dir)
                 # 將各類資料分開存, 以便後續處理 
                 images.append(varied_image)
                 left_speeds.append(varied_left_speed)
@@ -293,5 +304,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
