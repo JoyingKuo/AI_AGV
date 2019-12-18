@@ -24,13 +24,13 @@ img_channel = 1
 
 def image_preprocessing(img):
 
-    if(image_channel == 1):
+    if(img_channel == 1):
         # 轉換色相至灰階(1 channel), 才可以進行後續的reshpe
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
    
     # reshpae image 至 (400, 400) 
-    img = cv2.resize(img, (image_reshape_width, image_reshape_height),fx=0, fy=0)
-    img = img.reshape(image_reshape_width, image_reshape_height, image_channel)
+    img = cv2.resize(img, (img_width, img_height),fx=0, fy=0)
+    img = img.reshape(img_width, img_height, img_channel)
 
     #  轉換image 至可以被餵進 model 的資料型態
     img_array = image.img_to_array(img) 
