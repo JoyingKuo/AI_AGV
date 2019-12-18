@@ -56,18 +56,18 @@ def image_preprocessing(img):
     img_array = np.expand_dims(img_array, axis=0) 
     img_array = np.vstack([img_array])
 
-    return img, img_array
+    return img_array
 
 def generate_origin_clip(clip_name):
     clip_list = [] # 每個元素都是 single image clip
     
     # 在訓練資料路徑的子資料夾列表
-    sub_dir_list=os.listdir(train_data_path) 
+    sub_dir_list=os.listdir(test_data_path) 
     sub_dir_list.sort() 
 
     # 依序讀取每個訓練資料夾
     for subdir in sub_dir_list:
-        full_subdir_path = os.path.join(train_data_path, subdir) # 完整的subdir路徑
+        full_subdir_path = os.path.join(test_data_path, subdir) # 完整的subdir路徑
 
         # full_subdir_path 的資料型態必須為directory, 才可以繼續進行資料preprocess
         if(os.path.isdir(full_subdir_path)):
@@ -89,24 +89,29 @@ def generate_origin_clip(clip_name):
 
     return
 
-def generate_predict_clip(origin_clip_name):
+def generate_predict_clip(origin_clip_name, model):
     origin_clip = VideoFileClip(origin_clip_name)
-    output_clip = origin_clip.fl_image(lambda x: predict_single_image(x)) #NOTE: this function expects color images!!
+    output_clip = origin_clip.fl_image(lambda x: predict_single_image(x, model)) #NOTE: this function expects color images!!
     output_clip.write_videofile(predict_clip_name,audio=False, fps = FPS)
 
     return
 
+def handle_direction(left, right):
+    # return left, right
+    if left < 0.5:
+        return 0, 1, left, right
+    return 1, 1, left, right
 
 # 利用訓練好的model, 輸入照片並檢視其網路輸出結果
-def predict_single_image(img)
+def predict_single_image(img, model):
     
-    img, img_array = image_preprocessing(img)
+    img_array = image_preprocessing(img)
 
     # 預測結果
     result = model.predict(img_array, batch_size=1)
 
     # 將預測出來的結果畫到圖片上
-    left_dir, right_dir, left, right = handle_dir(result[1][0][0], result[3][0][0])
+    left_dir, right_dir, left, right = handle_direction(result[1][0][0], result[3][0][0])
     cv2.putText(img, "left_wheel_speed: " + str(int(result[0][0][0])), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
     cv2.putText(img, "left_wheel_dir: " + str(left_dir) + '(' + str(left) + ')', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
     cv2.putText(img, "right_wheel_speed: " + str(int(result[2][0][0])), (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
@@ -117,25 +122,24 @@ def predict_single_image(img)
 
 def main():
     # 載入先前訓練好的 model
-    model = load_model(loaded_model)
+    model = load_model(loaded_model_path)
     model.compile(optimizer="adam", loss="mse")
     model.summary()
 
     ##評估input image(s)的結果
     #評估整個資料夾並輸出影片
     if (output_mode):
-        generate_origin_clip(origin_clip_name)
-        generate_predict_clip(origin_clip_name)
+        generate_origin_clip(origin_clip_name) # 生成原始影片檔
+        generate_predict_clip(origin_clip_name, model) # 輸出預測結果影片檔
 
     #評估單張圖片
     else:
         img = cv2.imread(image_path) 
-        result = predict_single_image(img)
+        result = predict_single_image(img, model)
 
         # 顯示結果
-        cv2.imshow(result)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        plt.imshow(result)
+        plt.show()
 
     
 
