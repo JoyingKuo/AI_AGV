@@ -32,8 +32,8 @@ ktf.set_session(session)
 graph = False 
 
 ## 路徑初始化
-loaded_csv_path = '../../data/csv/straight_store.csv'
-model_save_path = '../../data/model/straight/'
+loaded_csv_path = '../../data/csv/straight_store.csv' # 訓練列表的路徑
+model_save_path = '../../data/model/straight/' # 訓練完模型的存放路徑
 dataset = [] # 存處理過後的訓練資料
 
 
